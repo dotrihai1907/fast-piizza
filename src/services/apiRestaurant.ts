@@ -1,26 +1,27 @@
-import { IMenu, IOrder, IResponseData } from "./apiModel";
+import {
+  ICreateOrderRequest,
+  ICreateOrderResponse,
+  IMenu,
+  IOrder,
+} from "./apiModel";
 
 const API_URL = "https://react-fast-pizza-api.onrender.com/api";
 
 export async function getMenu() {
   const res = await fetch(`${API_URL}/menu`);
-
-  // fetch won't throw error on 400 errors (e.g. when URL is wrong), so we need to do it manually. This will then go into the catch block, where the message is set
   if (!res.ok) throw Error("Failed getting menu");
-
-  const { data } = (await res.json()) as IResponseData<IMenu[]>;
-  return data;
+  const { data } = await res.json();
+  return data as IMenu[];
 }
 
 export async function getOrder(id: string) {
   const res = await fetch(`${API_URL}/order/${id}`);
   if (!res.ok) throw Error(`Couldn't find order #${id}`);
-
-  const { data } = (await res.json()) as IResponseData<IOrder>;
-  return data;
+  const { data } = await res.json();
+  return data as IOrder;
 }
 
-export async function createOrder(newOrder: unknown) {
+export async function createOrder(newOrder: ICreateOrderRequest) {
   try {
     const res = await fetch(`${API_URL}/order`, {
       method: "POST",
@@ -32,7 +33,7 @@ export async function createOrder(newOrder: unknown) {
 
     if (!res.ok) throw Error();
     const { data } = await res.json();
-    return data;
+    return data as ICreateOrderResponse;
   } catch {
     throw Error("Failed creating your order");
   }
@@ -49,7 +50,6 @@ export async function updateOrder(id: unknown, updateObj: unknown) {
     });
 
     if (!res.ok) throw Error();
-    // We don't need the data, so we don't return anything
   } catch (err) {
     throw Error("Failed updating your order");
   }

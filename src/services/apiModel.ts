@@ -5,12 +5,6 @@ export interface IError extends Error {
   status: number;
   statusText: string;
 }
-
-export interface IResponseData<T> {
-  data: T;
-  status: string;
-}
-
 export interface IMenu {
   id: number;
   imageUrl: string;
@@ -40,3 +34,13 @@ export interface IOrder {
   priorityPrice: number;
   status: string;
 }
+
+export interface ICreateOrderRequest {
+  address: string;
+  customer: string;
+  phone: string;
+  priority: boolean;
+  cart: ICart[];
+}
+
+export interface ICreateOrderResponse extends IOrder, ICreateOrderRequest {}
