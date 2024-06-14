@@ -17,8 +17,8 @@ export interface IMenu {
 export interface ICart {
   pizzaId: number;
   name: string;
-  addIngredients: string[];
-  removeIngredients: string[];
+  addIngredients?: string[];
+  removeIngredients?: string[];
   quantity: number;
   unitPrice: number;
   totalPrice: number;
