@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-// https://uibakery.io/regex-library/phone-number
-
-import { useState } from "react";
+import { UnknownAction } from "@reduxjs/toolkit";
+import { useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   ActionFunctionArgs,
   Form,
@@ -11,7 +11,12 @@ import {
 } from "react-router-dom";
 import { ICreateOrderRequest } from "../../services/apiModel";
 import { createOrder } from "../../services/apiRestaurant";
+import store from "../../store";
 import Button from "../../ui/Button";
+import { formatCurrency } from "../../utils/helpers";
+import EmptyCart from "../cart/EmptyCart";
+import { clearCart, getCart, getTotalCartPrice } from "../cart/cartSlice";
+import { fetchAddress, getUser } from "../user/userSlice";
 
 type FormErrorsType = {
   phone?: string;
@@ -39,40 +44,45 @@ export const createOrderAction = async ({ request }: ActionFunctionArgs) => {
   if (Object.keys(errors).length > 0) return errors;
 
   const newOrder = await createOrder(order);
+
+  store.dispatch(clearCart());
   return redirect(`/order/${newOrder.id}`);
 };
 
 const CreateOrder = () => {
+  const dispatch = useDispatch();
+
+  const cart = useSelector(getCart);
+  const totalCartPrice = useSelector(getTotalCartPrice);
+  const {
+    username,
+    status: addressStatus,
+    position,
+    address,
+    error: addressError,
+  } = useSelector(getUser);
+
   const navigation = useNavigation();
   const formErrors = useActionData() as FormErrorsType;
 
   const [withPriority, setWithPriority] = useState<boolean>(false);
 
-  const cart = [
-    {
-      pizzaId: 12,
-      name: "Mediterranean",
-      quantity: 2,
-      unitPrice: 16,
-      totalPrice: 32,
-    },
-    {
-      pizzaId: 6,
-      name: "Vegetale",
-      quantity: 1,
-      unitPrice: 13,
-      totalPrice: 13,
-    },
-    {
-      pizzaId: 11,
-      name: "Spinach and Mushroom",
-      quantity: 1,
-      unitPrice: 15,
-      totalPrice: 15,
-    },
-  ];
+  const totalPrice = useMemo(() => {
+    const priorityPrice = withPriority ? totalCartPrice * 0.2 : 0;
+    return totalCartPrice + priorityPrice;
+  }, [totalCartPrice, withPriority]);
 
   const isSubmitting = navigation.state === "submitting";
+  const isLoadingAddress = addressStatus === "loading";
+
+  if (!cart.length) return <EmptyCart />;
+
+  const handleGetAddress = (
+    e?: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
+    e?.preventDefault();
+    dispatch(fetchAddress() as unknown as UnknownAction);
+  };
 
   return (
     <div className="px-4 py-6">
@@ -82,7 +92,13 @@ const CreateOrder = () => {
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sm:basis-40">First Name</label>
           <div className="grow">
-            <input className="input" type="text" name="customer" required />
+            <input
+              className="input"
+              type="text"
+              name="customer"
+              required
+              defaultValue={username}
+            />
           </div>
         </div>
 
@@ -98,11 +114,34 @@ const CreateOrder = () => {
           </div>
         </div>
 
-        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sm:basis-40">Address</label>
           <div className="grow">
-            <input className="input" type="text" name="address" required />
+            <input
+              className="input"
+              type="text"
+              name="address"
+              required
+              disabled={isLoadingAddress}
+              defaultValue={address}
+            />
+            {addressStatus === "error" && (
+              <p className="mt-2 rounded-full bg-red-100 p-2 text-xs text-red-700">
+                {addressError}
+              </p>
+            )}
           </div>
+          {!position?.latitude && !position?.longitude && (
+            <span className="absolute right-[3px] top-[35px] z-20 sm:top-[3px] md:right-[5px] md:top-[5px]">
+              <Button
+                type="small"
+                disabled={isLoadingAddress}
+                onClick={(e) => handleGetAddress(e)}
+              >
+                Get position
+              </Button>
+            </span>
+          )}
         </div>
 
         <div className="mb-12 flex items-center gap-5">
@@ -121,8 +160,19 @@ const CreateOrder = () => {
 
         <div>
           <input type="hidden" name="cart" value={JSON.stringify(cart)} />
-          <Button disabled={isSubmitting} type="primary">
-            {isSubmitting ? "Placing order..." : "Order now"}
+          <input
+            type="hidden"
+            name="position"
+            value={
+              position.latitude && position.longitude
+                ? `${position.latitude},${position.longitude}`
+                : ""
+            }
+          />
+          <Button disabled={isSubmitting || isLoadingAddress} type="primary">
+            {isSubmitting
+              ? "Placing order..."
+              : `Order now from ${formatCurrency(totalPrice)}`}
           </Button>
         </div>
       </Form>

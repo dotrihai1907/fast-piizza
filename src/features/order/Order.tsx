@@ -1,13 +1,19 @@
 /* eslint-disable react-refresh/only-export-components */
-import { LoaderFunctionArgs, useLoaderData } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  LoaderFunctionArgs,
+  useFetcher,
+  useLoaderData,
+} from "react-router-dom";
+import { IMenu, IOrder } from "../../services/apiModel";
 import { getOrder } from "../../services/apiRestaurant";
 import {
   calcMinutesLeft,
   formatCurrency,
   formatDate,
 } from "../../utils/helpers";
-import { IOrder } from "../../services/apiModel";
 import OrderItem from "./OrderItem";
+import UpdateOrder from "./UpdateOrder";
 
 export const orderLoader = async ({ params }: LoaderFunctionArgs) => {
   const order = await getOrder(params.orderId ?? "");
@@ -16,6 +22,12 @@ export const orderLoader = async ({ params }: LoaderFunctionArgs) => {
 
 function Order() {
   const order = useLoaderData() as IOrder;
+
+  const fetcher = useFetcher<IMenu[]>();
+
+  useEffect(() => {
+    if (!fetcher.data && fetcher.state === "idle") fetcher.load("/menu");
+  }, [fetcher]);
 
   const {
     id,
@@ -58,7 +70,14 @@ function Order() {
 
       <ul className="divide-y divide-stone-200 border-b border-t">
         {cart.map((item) => (
-          <OrderItem key={item.pizzaId} item={item} />
+          <OrderItem
+            key={item.pizzaId}
+            item={item}
+            isLoadingIngredients={fetcher.state === "loading"}
+            ingredients={
+              fetcher.data?.find((el) => el.id === item.pizzaId)?.ingredients
+            }
+          />
         ))}
       </ul>
 
@@ -75,6 +94,8 @@ function Order() {
           To pay on delivery: {formatCurrency(orderPrice + priorityPrice)}
         </p>
       </div>
+
+      {!priority && <UpdateOrder />}
     </div>
   );
 }

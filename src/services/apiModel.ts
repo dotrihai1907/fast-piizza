@@ -44,3 +44,23 @@ export interface ICreateOrderRequest {
 }
 
 export interface ICreateOrderResponse extends IOrder, ICreateOrderRequest {}
+
+export interface IAddress {
+  latitude: number;
+  longitude: number;
+}
+
+export interface IGeocodingResponse {
+  latitude: number;
+  longitude: number;
+  locality: string;
+  city: string;
+  postcode: string;
+  countryName: string;
+}
+
+export interface IPosition {
+  coords: IAddress;
+}
+
+export interface IUpdateOrder extends Partial<ICreateOrderRequest> {}

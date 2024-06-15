@@ -3,6 +3,7 @@ import {
   ICreateOrderResponse,
   IMenu,
   IOrder,
+  IUpdateOrder,
 } from "./apiModel";
 
 const API_URL = "https://react-fast-pizza-api.onrender.com/api";
@@ -39,7 +40,7 @@ export async function createOrder(newOrder: ICreateOrderRequest) {
   }
 }
 
-export async function updateOrder(id: unknown, updateObj: unknown) {
+export async function updateOrder(id: string, updateObj: IUpdateOrder) {
   try {
     const res = await fetch(`${API_URL}/order/${id}`, {
       method: "PATCH",
